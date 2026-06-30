@@ -1,7 +1,7 @@
 package com.example.protocolwriter.web;
 
-import com.example.protocolwriter.domain.ProtocolStatistics;
-import com.example.protocolwriter.domain.render.RenderFormat;
+import com.example.protocolwriter.domain.markdown.ProtocolOutline;
+import com.example.protocolwriter.domain.markdown.ProtocolStatistics;
 import com.example.protocolwriter.service.ProtocolService;
 import com.example.protocolwriter.web.dto.CreateProtocolRequest;
 import com.example.protocolwriter.web.dto.ProtocolResponse;
@@ -9,7 +9,6 @@ import com.example.protocolwriter.web.dto.ProtocolSummaryResponse;
 import com.example.protocolwriter.web.dto.UpdateProtocolRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,7 +17,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -65,14 +63,13 @@ public class ProtocolController {
         service.delete(id);
     }
 
-    @GetMapping(value = "/{id}/render", produces = MediaType.TEXT_PLAIN_VALUE)
-    public String render(@PathVariable UUID id,
-                         @RequestParam(defaultValue = "MARKDOWN") RenderFormat format) {
-        return service.render(id, format);
-    }
-
     @GetMapping("/{id}/stats")
     public ProtocolStatistics stats(@PathVariable UUID id) {
         return service.statistics(id);
+    }
+
+    @GetMapping("/{id}/outline")
+    public ProtocolOutline outline(@PathVariable UUID id) {
+        return service.outline(id);
     }
 }

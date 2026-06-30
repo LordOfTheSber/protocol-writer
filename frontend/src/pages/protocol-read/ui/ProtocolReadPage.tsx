@@ -2,8 +2,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useProtocol } from '@/entities/protocol';
 import { ProtocolViewer } from '@/widgets/protocol-viewer';
 import { DeleteProtocolButton } from '@/features/delete-protocol';
-import { RenderPreview } from './RenderPreview';
 import { ProtocolStatsCard } from './ProtocolStatsCard';
+import { ProtocolOutlineCard } from './ProtocolOutlineCard';
 
 export function ProtocolReadPage() {
   const { id = '' } = useParams();
@@ -31,8 +31,8 @@ export function ProtocolReadPage() {
       <div className="read-layout">
         <ProtocolViewer protocol={data} />
         <aside className="read-layout__aside">
+          <ProtocolOutlineCard id={id} />
           <ProtocolStatsCard id={id} />
-          <RenderPreview id={id} />
         </aside>
       </div>
     </div>

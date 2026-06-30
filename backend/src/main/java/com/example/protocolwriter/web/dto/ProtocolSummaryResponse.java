@@ -12,7 +12,6 @@ public record ProtocolSummaryResponse(
         String title,
         String author,
         ProtocolStatus status,
-        int sectionCount,
         Instant updatedAt
 ) {
 
@@ -22,7 +21,6 @@ public record ProtocolSummaryResponse(
                 entity.getTitle(),
                 entity.getAuthor(),
                 entity.getStatus(),
-                entity.getContent().sections().size(),
                 entity.getUpdatedAt()
         );
     }

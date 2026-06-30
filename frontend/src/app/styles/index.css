@@ -394,3 +394,95 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---- markdown editor / diagrams ---- */
+.protocol-editor__insert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.protocol-editor__editor {
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.markdown-body {
+  background: transparent !important;
+  font-size: 15px;
+}
+.mermaid-diagram,
+.excalidraw-embed {
+  display: flex;
+  justify-content: center;
+  margin: 12px 0;
+}
+.excalidraw-embed svg,
+.mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+.diagram-error {
+  background: #fce4e5;
+  color: var(--danger);
+  padding: 8px 12px;
+  border-radius: 8px;
+  white-space: pre-wrap;
+}
+
+/* ---- stats / outline cards ---- */
+.stats-card__list,
+.outline-card__list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+.stats-card__list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.outline-card__list li {
+  color: var(--text);
+}
+
+/* ---- modal (excalidraw) ---- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  width: 100%;
+  overflow: hidden;
+}
+.modal--wide {
+  max-width: 1100px;
+}
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.modal__actions {
+  display: flex;
+  gap: 8px;
+}
+.excalidraw-host {
+  height: 70vh;
+}

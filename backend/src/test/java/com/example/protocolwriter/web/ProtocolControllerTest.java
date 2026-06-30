@@ -1,8 +1,6 @@
 package com.example.protocolwriter.web;
 
-import com.example.protocolwriter.domain.ProtocolContent;
 import com.example.protocolwriter.domain.ProtocolStatus;
-import com.example.protocolwriter.domain.TextSection;
 import com.example.protocolwriter.persistence.ProtocolEntity;
 import com.example.protocolwriter.service.ProtocolNotFoundException;
 import com.example.protocolwriter.service.ProtocolService;
@@ -13,14 +11,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -34,10 +30,9 @@ class ProtocolControllerTest {
     private ProtocolService service;
 
     private ProtocolEntity sampleEntity() {
-        var content = new ProtocolContent(List.of(new TextSection("Вступление", "Текст")));
         return new ProtocolEntity(
                 UUID.fromString("11111111-1111-1111-1111-111111111111"),
-                "Протокол №1", "Иванов", ProtocolStatus.DRAFT, content);
+                "Протокол №1", "Иванов", ProtocolStatus.DRAFT, "# Заголовок\n\nТекст.");
     }
 
     @Test
@@ -48,16 +43,14 @@ class ProtocolControllerTest {
                 {
                   "title": "Протокол №1",
                   "author": "Иванов",
-                  "sections": [
-                    { "type": "text", "heading": "Вступление", "body": "Текст" }
-                  ]
+                  "body": "# Заголовок\\n\\nТекст."
                 }
                 """;
 
         mockMvc.perform(post("/api/protocols").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.title").value("Протокол №1"))
-                .andExpect(jsonPath("$.sections[0].type").value("text"));
+                .andExpect(jsonPath("$.body").value("# Заголовок\n\nТекст."));
     }
 
     @Test
@@ -77,15 +70,5 @@ class ProtocolControllerTest {
 
         mockMvc.perform(get("/api/protocols/{id}", id))
                 .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void renderReturnsMarkdown() throws Exception {
-        var id = UUID.randomUUID();
-        when(service.render(any(), any())).thenReturn("# Протокол №1\n");
-
-        mockMvc.perform(get("/api/protocols/{id}/render", id))
-                .andExpect(status().isOk())
-                .andExpect(content().string("# Протокол №1\n"));
     }
 }

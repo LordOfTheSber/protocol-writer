@@ -1,7 +1,11 @@
 import { apiRequest } from '@/shared/api/client';
-import type { Protocol, ProtocolInput, ProtocolStatistics, ProtocolSummary } from '../model/types';
-
-export type RenderFormat = 'MARKDOWN' | 'TEXT';
+import type {
+  Protocol,
+  ProtocolInput,
+  ProtocolOutline,
+  ProtocolStatistics,
+  ProtocolSummary,
+} from '../model/types';
 
 export const protocolApi = {
   list: () => apiRequest<ProtocolSummary[]>('/protocols'),
@@ -16,8 +20,7 @@ export const protocolApi = {
 
   remove: (id: string) => apiRequest<void>(`/protocols/${id}`, { method: 'DELETE' }),
 
-  render: (id: string, format: RenderFormat) =>
-    apiRequest<string>(`/protocols/${id}/render?format=${format}`, { asText: true }),
-
   stats: (id: string) => apiRequest<ProtocolStatistics>(`/protocols/${id}/stats`),
+
+  outline: (id: string) => apiRequest<ProtocolOutline>(`/protocols/${id}/outline`),
 };

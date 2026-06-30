@@ -1,6 +1,5 @@
 package com.example.protocolwriter.persistence;
 
-import com.example.protocolwriter.domain.ProtocolContent;
 import com.example.protocolwriter.domain.ProtocolStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,8 +9,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -19,10 +16,9 @@ import java.util.UUID;
 /**
  * JPA-сущность протокола.
  *
- * <p>Поле {@link #content} хранится в PostgreSQL как <b>JSONB</b> благодаря
- * {@code @JdbcTypeCode(SqlTypes.JSON)} — Hibernate (де)сериализует
- * {@link ProtocolContent} через Jackson, а полиморфизм секций обеспечивают
- * аннотации на {@link com.example.protocolwriter.domain.Section}.
+ * <p>Тело протокола — единый markdown-документ ({@link #body}). Диаграммы
+ * (mermaid / excalidraw) хранятся прямо в тексте как огороженные блоки кода,
+ * поэтому бэкенду не нужна отдельная модель секций — он хранит просто текст.
  */
 @Entity
 @Table(name = "protocols")
@@ -41,9 +37,8 @@ public class ProtocolEntity {
     @Column(nullable = false)
     private ProtocolStatus status;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(nullable = false, columnDefinition = "jsonb")
-    private ProtocolContent content;
+    @Column(nullable = false, columnDefinition = "text")
+    private String body;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -55,12 +50,12 @@ public class ProtocolEntity {
         // для JPA
     }
 
-    public ProtocolEntity(UUID id, String title, String author, ProtocolStatus status, ProtocolContent content) {
+    public ProtocolEntity(UUID id, String title, String author, ProtocolStatus status, String body) {
         this.id = id;
         this.title = title;
         this.author = author;
         this.status = status;
-        this.content = content;
+        this.body = body;
     }
 
     @PrePersist
@@ -68,8 +63,8 @@ public class ProtocolEntity {
         var now = Instant.now();
         this.createdAt = now;
         this.updatedAt = now;
-        if (this.content == null) {
-            this.content = ProtocolContent.empty();
+        if (this.body == null) {
+            this.body = "";
         }
         if (this.status == null) {
             this.status = ProtocolStatus.DRAFT;
@@ -109,12 +104,12 @@ public class ProtocolEntity {
         this.status = status;
     }
 
-    public ProtocolContent getContent() {
-        return content;
+    public String getBody() {
+        return body;
     }
 
-    public void setContent(ProtocolContent content) {
-        this.content = content;
+    public void setBody(String body) {
+        this.body = body;
     }
 
     public Instant getCreatedAt() {

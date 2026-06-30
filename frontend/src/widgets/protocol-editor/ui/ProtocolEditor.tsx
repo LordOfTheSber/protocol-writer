@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
+import MDEditor from '@uiw/react-md-editor';
+import '@uiw/react-md-editor/markdown-editor.css';
+import '@uiw/react-markdown-preview/markdown.css';
 import { Button, Card, Field } from '@/shared/ui';
+import { markdownComponents } from '@/shared/markdown';
 import {
   PROTOCOL_STATUSES,
   PROTOCOL_STATUS_LABELS,
-  SECTION_TYPE_LABELS,
-  createEmptySection,
   type ProtocolInput,
   type ProtocolStatus,
-  type Section,
-  type SectionType,
 } from '@/entities/protocol';
-import { SectionEditor } from '@/features/section-editor';
+import { MERMAID_TEMPLATE, appendBlock, excalidrawBlock } from '@/features/insert-diagram';
+
+const ExcalidrawModal = lazy(() => import('@/features/insert-diagram/ui/ExcalidrawModal'));
 
 interface Props {
   initial?: ProtocolInput;
@@ -20,31 +22,14 @@ interface Props {
   onSubmit: (input: ProtocolInput) => void;
 }
 
-const SECTION_TYPES: SectionType[] = ['text', 'decisions', 'table'];
-
-const EMPTY: ProtocolInput = { title: '', author: '', status: 'DRAFT', sections: [] };
+const EMPTY: ProtocolInput = { title: '', author: '', status: 'DRAFT', body: '' };
 
 export function ProtocolEditor({ initial, submitLabel, pending, errorMessage, onSubmit }: Props) {
   const [draft, setDraft] = useState<ProtocolInput>(initial ?? EMPTY);
-  const [newType, setNewType] = useState<SectionType>('text');
+  const [drawingOpen, setDrawingOpen] = useState(false);
 
   const patch = (p: Partial<ProtocolInput>) => setDraft((d) => ({ ...d, ...p }));
-
-  const updateSection = (index: number, section: Section) =>
-    patch({ sections: draft.sections.map((s, i) => (i === index ? section : s)) });
-
-  const removeSection = (index: number) =>
-    patch({ sections: draft.sections.filter((_, i) => i !== index) });
-
-  const addSection = () => patch({ sections: [...draft.sections, createEmptySection(newType)] });
-
-  const moveSection = (index: number, direction: -1 | 1) => {
-    const target = index + direction;
-    if (target < 0 || target >= draft.sections.length) return;
-    const sections = [...draft.sections];
-    [sections[index], sections[target]] = [sections[target], sections[index]];
-    patch({ sections });
-  };
+  const setBody = (body: string) => patch({ body });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,34 +71,29 @@ export function ProtocolEditor({ initial, submitLabel, pending, errorMessage, on
         </div>
       </Card>
 
-      {draft.sections.map((section, index) => (
-        <SectionEditor
-          key={index}
-          section={section}
-          index={index}
-          total={draft.sections.length}
-          onChange={(s) => updateSection(index, s)}
-          onRemove={() => removeSection(index)}
-          onMove={(dir) => moveSection(index, dir)}
-        />
-      ))}
-
-      <Card className="protocol-editor__add">
-        <select
-          className="input"
-          value={newType}
-          onChange={(e) => setNewType(e.target.value as SectionType)}
+      <div className="protocol-editor__insert">
+        <span className="muted">Вставить:</span>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => setBody(appendBlock(draft.body, MERMAID_TEMPLATE))}
         >
-          {SECTION_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {SECTION_TYPE_LABELS[t]}
-            </option>
-          ))}
-        </select>
-        <Button type="button" variant="secondary" onClick={addSection}>
-          + Добавить секцию
+          Mermaid-диаграмму
         </Button>
-      </Card>
+        <Button type="button" variant="secondary" onClick={() => setDrawingOpen(true)}>
+          Схему (Excalidraw)
+        </Button>
+      </div>
+
+      <div className="protocol-editor__editor" data-color-mode="light">
+        <MDEditor
+          value={draft.body}
+          onChange={(v) => setBody(v ?? '')}
+          height={520}
+          previewOptions={{ components: markdownComponents }}
+          textareaProps={{ placeholder: 'Текст протокола в формате Markdown…' }}
+        />
+      </div>
 
       {errorMessage && <p className="error">{errorMessage}</p>}
 
@@ -122,6 +102,18 @@ export function ProtocolEditor({ initial, submitLabel, pending, errorMessage, on
           {pending ? 'Сохранение…' : submitLabel}
         </Button>
       </div>
+
+      {drawingOpen && (
+        <Suspense fallback={<div className="modal-overlay"><div className="muted">Загрузка редактора схем…</div></div>}>
+          <ExcalidrawModal
+            onCancel={() => setDrawingOpen(false)}
+            onSave={(scene) => {
+              setBody(appendBlock(draft.body, excalidrawBlock(scene)));
+              setDrawingOpen(false);
+            }}
+          />
+        </Suspense>
+      )}
     </form>
   );
 }

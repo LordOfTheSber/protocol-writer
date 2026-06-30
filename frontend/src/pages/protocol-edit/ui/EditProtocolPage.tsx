@@ -15,7 +15,7 @@ export function EditProtocolPage() {
     title: data.title,
     author: data.author,
     status: data.status,
-    sections: data.sections,
+    body: data.body,
   };
 
   return (

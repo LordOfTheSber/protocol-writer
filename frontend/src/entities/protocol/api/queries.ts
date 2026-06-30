@@ -1,15 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import type { ProtocolInput } from '../model/types';
-import { protocolApi, type RenderFormat } from './protocolApi';
+import { protocolApi } from './protocolApi';
 
 export const protocolKeys = {
   all: ['protocols'] as const,
   list: () => [...protocolKeys.all, 'list'] as const,
   detail: (id: string) => [...protocolKeys.all, 'detail', id] as const,
   stats: (id: string) => [...protocolKeys.all, 'stats', id] as const,
-  render: (id: string, format: RenderFormat) =>
-    [...protocolKeys.all, 'render', id, format] as const,
+  outline: (id: string) => [...protocolKeys.all, 'outline', id] as const,
 };
 
 export function useProtocolList() {
@@ -24,11 +23,8 @@ export function useProtocolStats(id: string) {
   return useQuery({ queryKey: protocolKeys.stats(id), queryFn: () => protocolApi.stats(id) });
 }
 
-export function useProtocolRender(id: string, format: RenderFormat) {
-  return useQuery({
-    queryKey: protocolKeys.render(id, format),
-    queryFn: () => protocolApi.render(id, format),
-  });
+export function useProtocolOutline(id: string) {
+  return useQuery({ queryKey: protocolKeys.outline(id), queryFn: () => protocolApi.outline(id) });
 }
 
 export function useCreateProtocol() {

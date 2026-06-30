@@ -1,11 +1,9 @@
 package com.example.protocolwriter.service;
 
-import com.example.protocolwriter.domain.ProtocolContent;
-import com.example.protocolwriter.domain.ProtocolStatistics;
 import com.example.protocolwriter.domain.ProtocolStatus;
-import com.example.protocolwriter.domain.Section;
-import com.example.protocolwriter.domain.render.ProtocolRenderer;
-import com.example.protocolwriter.domain.render.RenderFormat;
+import com.example.protocolwriter.domain.markdown.MarkdownAnalyzer;
+import com.example.protocolwriter.domain.markdown.ProtocolOutline;
+import com.example.protocolwriter.domain.markdown.ProtocolStatistics;
 import com.example.protocolwriter.persistence.ProtocolEntity;
 import com.example.protocolwriter.persistence.ProtocolRepository;
 import com.example.protocolwriter.web.dto.CreateProtocolRequest;
@@ -38,8 +36,8 @@ public class ProtocolService {
 
     public ProtocolEntity create(CreateProtocolRequest request) {
         var status = request.status() == null ? ProtocolStatus.DRAFT : request.status();
-        var content = toContent(request.sections());
-        var entity = new ProtocolEntity(UUID.randomUUID(), request.title(), request.author(), status, content);
+        var body = request.body() == null ? "" : request.body();
+        var entity = new ProtocolEntity(UUID.randomUUID(), request.title(), request.author(), status, body);
         return repository.save(entity);
     }
 
@@ -48,7 +46,7 @@ public class ProtocolService {
         entity.setTitle(request.title());
         entity.setAuthor(request.author());
         entity.setStatus(request.status());
-        entity.setContent(toContent(request.sections()));
+        entity.setBody(request.body() == null ? "" : request.body());
         return repository.save(entity);
     }
 
@@ -60,17 +58,12 @@ public class ProtocolService {
     }
 
     @Transactional(readOnly = true)
-    public String render(UUID id, RenderFormat format) {
-        var entity = findById(id);
-        return ProtocolRenderer.render(entity.getTitle(), entity.getContent(), format);
+    public ProtocolStatistics statistics(UUID id) {
+        return MarkdownAnalyzer.statistics(findById(id).getBody());
     }
 
     @Transactional(readOnly = true)
-    public ProtocolStatistics statistics(UUID id) {
-        return ProtocolStatistics.of(findById(id).getContent());
-    }
-
-    private static ProtocolContent toContent(List<Section> sections) {
-        return sections == null ? ProtocolContent.empty() : new ProtocolContent(sections);
+    public ProtocolOutline outline(UUID id) {
+        return MarkdownAnalyzer.outline(findById(id).getBody());
     }
 }

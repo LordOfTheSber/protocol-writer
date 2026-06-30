@@ -22,7 +22,6 @@ export function ProtocolList() {
               </Link>
               <div className="protocol-list__meta">
                 <ProtocolStatusBadge status={p.status} />
-                <span className="muted">{p.sectionCount} секц.</span>
                 {p.author && <span className="muted">{p.author}</span>}
                 <span className="muted">{formatDateTime(p.updatedAt)}</span>
               </div>

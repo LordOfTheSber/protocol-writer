@@ -3,62 +3,73 @@
 Учебное приложение для **написания и чтения протоколов**. Цель проекта —
 изучить возможности **Java 21–25** на реальном Spring-приложении.
 
-Протокол — это универсальный документ, состоящий из упорядоченных **секций**
-разных типов:
+Протокол — это **единый документ в формате Markdown** (по образцу Obsidian):
+пишется сплошным текстом с форматированием, а внутрь можно вставлять
+**диаграммы**:
 
-- **Текст** — заголовок и произвольный текст (повестка, вступление и т.п.);
-- **Решения** — список поручений со статусом, ответственным и сроком;
-- **Таблица** — колонки и строки.
+- **Mermaid** — блоки ` ```mermaid ` рендерятся в схемы (flowchart, sequence,
+  gantt и т.д.);
+- **Excalidraw** — рисованные от руки схемы (блоки ` ```excalidraw ` со сценой).
 
-Расширяемость набора секций моделируется через `sealed`-иерархию, а рендер и
-статистика — через pattern matching.
+Редактор — **split-режим**: слева Markdown с панелью форматирования, справа
+живой предпросмотр с диаграммами.
 
 ## Стек
 
 | Слой    | Технологии                                                        |
 |---------|-------------------------------------------------------------------|
 | Backend | Java 25, Spring Boot 3.5, Spring Web, Spring Data JPA, Flyway      |
-| БД      | PostgreSQL (JSONB для хранения секций), запуск через Docker        |
+| БД      | PostgreSQL (тело протокола — текст), запуск через Docker           |
 | Frontend| React 19, TypeScript, Vite, TanStack Query, React Router          |
+| Редактор| @uiw/react-md-editor (split), mermaid, @excalidraw/excalidraw     |
 | Архитектура front | Feature-Sliced Design (FSD)                             |
 
 ## Какие фичи Java 21–25 показаны
 
+Бэкенд хранит тело протокола как обычный markdown-текст; диаграммы — это блоки
+кода внутри текста, поэтому рендер целиком на фронте. Java-фичи живут в
+**анализаторе markdown**, который разбирает текст для оглавления и статистики:
+
 | Фича | Где смотреть |
 |------|--------------|
-| **records** | `domain/TextSection`, `Decision`, DTO в `web/dto/*` |
-| **sealed interface** | `domain/Section` (`permits TextSection, DecisionListSection, TableSection`) |
-| **Pattern matching for switch** + **record patterns** | `domain/render/ProtocolRenderer`, `domain/ProtocolStatistics` |
-| **Sequenced Collections** (`getFirst`/`getLast`) | `domain/ProtocolContent` |
+| **records** | `domain/markdown/MarkdownBlock` (Heading/FencedCode/Paragraph), DTO в `web/dto/*` |
+| **sealed interface** | `domain/markdown/MarkdownBlock` (наследники в том же файле, `permits` выводится) |
+| **Pattern matching for switch** + **record patterns** + guard'ы `when` | `domain/markdown/MarkdownAnalyzer` (статистика и оглавление) |
+| **Sequenced Collections** (`getFirst`/`getLast`) | оглавление в `MarkdownAnalyzer`/тестах |
 | **Virtual Threads** | `application.yml` → `spring.threads.virtual.enabled=true` |
 
-`switch` по `Section` исчерпывающий: добавление нового типа секции вызовет
-ошибку компиляции, пока он не обработан во всех местах — это и есть главная
-ценность `sealed` + pattern matching.
+`switch` по `MarkdownBlock` исчерпывающий: добавление нового типа блока вызовет
+ошибку компиляции, пока он не обработан — в этом ценность `sealed` + pattern
+matching.
 
 ## Структура репозитория
 
 ```
 backend/   — Spring Boot приложение (Maven)
   src/main/java/com/example/protocolwriter/
-    domain/       — чистая модель: sealed Section, records, рендер, статистика
-    persistence/  — JPA-сущность с JSONB-колонкой + репозиторий
-    service/      — бизнес-логика (CRUD, рендер, статистика)
-    web/          — REST-контроллер, DTO, обработчик ошибок
-    config/       — CORS
-  src/main/resources/db/migration/ — Flyway-миграции
+    domain/markdown/  — sealed MarkdownBlock, анализатор (оглавление, статистика)
+    persistence/      — JPA-сущность (тело как text) + репозиторий
+    service/          — бизнес-логика (CRUD, статистика, оглавление)
+    web/              — REST-контроллер, DTO, обработчик ошибок
+    config/           — CORS
+  src/main/resources/db/migration/ — Flyway-миграции (V1, V2)
 
 frontend/  — React + TS + Vite, слои FSD:
   src/
     app/       — провайдеры (QueryClient, Router), роутинг, стили
-    pages/     — protocols (список), protocol-read (чтение), protocol-edit (форма)
+    pages/     — protocols (список), protocol-read (чтение + оглавление/статистика),
+                 protocol-edit (split-редактор)
     widgets/   — protocol-list, protocol-viewer, protocol-editor
-    features/  — create-protocol, delete-protocol, section-editor
-    entities/  — protocol (типы, API, react-query хуки, бэйджи)
-    shared/    — api-клиент, ui-кит, config, lib
+    features/  — create-protocol, delete-protocol, insert-diagram (Mermaid/Excalidraw)
+    entities/  — protocol (типы, API, react-query хуки)
+    shared/    — api-клиент, ui-кит, markdown (MarkdownView + рендер диаграмм), lib
 
 docker-compose.yml — PostgreSQL + Adminer
 ```
+
+Excalidraw подгружается **лениво** (React.lazy), чтобы тяжёлая библиотека не
+попадала в основной бандл — она загружается только при открытии редактора схем
+или рендере документа со схемой.
 
 ## Требования
 
@@ -94,15 +105,15 @@ npm run dev
 
 ## REST API
 
-| Метод  | Путь                                   | Описание                          |
-|--------|----------------------------------------|-----------------------------------|
-| GET    | `/api/protocols`                       | список протоколов (краткий)       |
-| GET    | `/api/protocols/{id}`                  | полный протокол                   |
-| POST   | `/api/protocols`                       | создать                           |
-| PUT    | `/api/protocols/{id}`                  | обновить                          |
-| DELETE | `/api/protocols/{id}`                  | удалить                           |
-| GET    | `/api/protocols/{id}/render?format=`   | рендер (`MARKDOWN`/`TEXT`)        |
-| GET    | `/api/protocols/{id}/stats`            | статистика по секциям и решениям  |
+| Метод  | Путь                          | Описание                          |
+|--------|-------------------------------|-----------------------------------|
+| GET    | `/api/protocols`              | список протоколов (краткий)       |
+| GET    | `/api/protocols/{id}`         | полный протокол (с markdown-телом)|
+| POST   | `/api/protocols`              | создать                           |
+| PUT    | `/api/protocols/{id}`         | обновить                          |
+| DELETE | `/api/protocols/{id}`         | удалить                           |
+| GET    | `/api/protocols/{id}/stats`   | статистика (слова, заголовки, диаграммы) |
+| GET    | `/api/protocols/{id}/outline` | оглавление (заголовки по порядку) |
 
 Пример создания протокола:
 
@@ -113,14 +124,7 @@ curl -X POST http://localhost:8080/api/protocols \
     "title": "Протокол совещания №1",
     "author": "Иванов",
     "status": "DRAFT",
-    "sections": [
-      { "type": "text", "heading": "Вступление", "body": "Совещание открыто." },
-      { "type": "decisions", "heading": "Решения", "decisions": [
-        { "text": "Подготовить отчёт", "status": "OPEN", "assignee": "Петров", "dueDate": "2026-07-10" }
-      ]},
-      { "type": "table", "heading": "Участники", "columns": ["Имя", "Роль"],
-        "rows": [["Иванов", "Аналитик"], ["Петров", "Менеджер"]] }
-    ]
+    "body": "# Повестка\n\nОбсудили план.\n\n```mermaid\nflowchart TD\n  A[Старт] --> B[Готово]\n```\n"
   }'
 ```
 
@@ -131,4 +135,5 @@ cd backend
 ./mvnw test
 ```
 
-Покрыты: рендер (pattern matching), подсчёт статистики, REST-слой (`@WebMvcTest`).
+Покрыты: анализатор markdown (pattern matching, оглавление, статистика) и
+REST-слой (`@WebMvcTest`).
