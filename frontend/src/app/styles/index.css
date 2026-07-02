@@ -449,6 +449,40 @@ a {
   color: var(--text);
 }
 
+/* ---- AI assist ---- */
+.ai-panel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ai-panel__preview {
+  padding: 18px;
+  overflow: auto;
+}
+.ai-analysis__result {
+  margin-top: 12px;
+  font-size: 14px;
+}
+.ai-analysis__result > p {
+  margin: 0 0 8px;
+}
+.ai-analysis__section h4 {
+  margin: 10px 0 4px;
+  font-size: 13px;
+}
+.ai-analysis__section ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ai-analysis .error {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+
 /* ---- modal (excalidraw) ---- */
 .modal-overlay {
   position: fixed;

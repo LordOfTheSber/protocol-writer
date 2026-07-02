@@ -16,6 +16,17 @@ services:
       timeout: 5s
       retries: 10
 
+  # Локальный рантайм open-source LLM для AI-функций (анализ/улучшение протоколов).
+  # После первого запуска скачайте модель:
+  #   docker compose exec ollama ollama pull qwen2.5:7b
+  ollama:
+    image: ollama/ollama:latest
+    container_name: protocol-writer-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+
   adminer:
     image: adminer:4
     container_name: protocol-writer-adminer
@@ -27,3 +38,4 @@ services:
 
 volumes:
   pgdata:
+  ollama:

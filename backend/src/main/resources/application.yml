@@ -25,6 +25,17 @@ spring:
     virtual:
       enabled: true
 
+# Интеграция с open-source LLM через Ollama (анализ и улучшение протоколов).
+# Модель можно поменять на любую открытую: llama3.1:8b, mistral:7b, qwen2.5:3b …
+app:
+  ai:
+    base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+    model: ${OLLAMA_MODEL:qwen2.5:7b}
+    temperature: 0.3
+    connect-timeout: 3s
+    read-timeout: 180s
+    max-input-chars: 24000
+
 server:
   port: 8080
 

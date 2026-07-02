@@ -1,5 +1,6 @@
 package com.example.protocolwriter.web;
 
+import com.example.protocolwriter.ai.AiUnavailableException;
 import com.example.protocolwriter.service.ProtocolNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -15,6 +16,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ProtocolNotFoundException.class)
     public ProblemDetail handleNotFound(ProtocolNotFoundException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(AiUnavailableException.class)
+    public ProblemDetail handleAiUnavailable(AiUnavailableException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

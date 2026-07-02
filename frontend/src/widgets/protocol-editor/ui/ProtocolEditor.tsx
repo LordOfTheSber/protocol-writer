@@ -11,6 +11,7 @@ import {
   type ProtocolStatus,
 } from '@/entities/protocol';
 import { MERMAID_TEMPLATE, appendBlock, excalidrawBlock } from '@/features/insert-diagram';
+import { AiAssistPanel } from '@/features/ai-assist';
 
 const ExcalidrawModal = lazy(() => import('@/features/insert-diagram/ui/ExcalidrawModal'));
 
@@ -84,6 +85,8 @@ export function ProtocolEditor({ initial, submitLabel, pending, errorMessage, on
           Схему (Excalidraw)
         </Button>
       </div>
+
+      <AiAssistPanel body={draft.body} onApply={setBody} />
 
       <div className="protocol-editor__editor" data-color-mode="light">
         <MDEditor

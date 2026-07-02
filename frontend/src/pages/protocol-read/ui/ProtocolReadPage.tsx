@@ -2,6 +2,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useProtocol } from '@/entities/protocol';
 import { ProtocolViewer } from '@/widgets/protocol-viewer';
 import { DeleteProtocolButton } from '@/features/delete-protocol';
+import { AiAnalysisCard } from '@/features/ai-assist';
 import { ProtocolStatsCard } from './ProtocolStatsCard';
 import { ProtocolOutlineCard } from './ProtocolOutlineCard';
 
@@ -33,6 +34,7 @@ export function ProtocolReadPage() {
         <aside className="read-layout__aside">
           <ProtocolOutlineCard id={id} />
           <ProtocolStatsCard id={id} />
+          <AiAnalysisCard id={id} />
         </aside>
       </div>
     </div>
