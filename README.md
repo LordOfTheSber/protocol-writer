@@ -23,6 +23,7 @@
 | Frontend| React 19, TypeScript, Vite, TanStack Query, React Router          |
 | Редактор| @uiw/react-md-editor (split), mermaid, @excalidraw/excalidraw     |
 | Архитектура front | Feature-Sliced Design (FSD)                             |
+| ИИ      | Ollama (open-source LLM: qwen2.5 / llama3.1 / mistral), Spring RestClient |
 
 ## Какие фичи Java 21–25 показаны
 
@@ -47,6 +48,7 @@ matching.
 ```
 backend/   — Spring Boot приложение (Maven)
   src/main/java/com/example/protocolwriter/
+    ai/               — интеграция с Ollama (клиент, промпты, structured output)
     domain/markdown/  — sealed MarkdownBlock, анализатор (оглавление, статистика)
     persistence/      — JPA-сущность (тело как text) + репозиторий
     service/          — бизнес-логика (CRUD, статистика, оглавление)
@@ -60,11 +62,12 @@ frontend/  — React + TS + Vite, слои FSD:
     pages/     — protocols (список), protocol-read (чтение + оглавление/статистика),
                  protocol-edit (split-редактор)
     widgets/   — protocol-list, protocol-viewer, protocol-editor
-    features/  — create-protocol, delete-protocol, insert-diagram (Mermaid/Excalidraw)
+    features/  — create-protocol, delete-protocol, insert-diagram (Mermaid/Excalidraw),
+                 ai-assist (улучшение текста, AI-анализ)
     entities/  — protocol (типы, API, react-query хуки)
     shared/    — api-клиент, ui-кит, markdown (MarkdownView + рендер диаграмм), lib
 
-docker-compose.yml — PostgreSQL + Adminer
+docker-compose.yml — PostgreSQL + Adminer + Ollama
 ```
 
 Excalidraw подгружается **лениво** (React.lazy), чтобы тяжёлая библиотека не
@@ -114,6 +117,8 @@ npm run dev
 | DELETE | `/api/protocols/{id}`         | удалить                           |
 | GET    | `/api/protocols/{id}/stats`   | статистика (слова, заголовки, диаграммы) |
 | GET    | `/api/protocols/{id}/outline` | оглавление (заголовки по порядку) |
+| POST   | `/api/protocols/{id}/analyze` | AI-анализ протокола (LLM, structured output) |
+| POST   | `/api/ai/improve`             | улучшение текста (`mode`: IMPROVE / SHORTEN / EXPAND / FIX_GRAMMAR) |
 
 Пример создания протокола:
 
@@ -127,6 +132,39 @@ curl -X POST http://localhost:8080/api/protocols \
     "body": "# Повестка\n\nОбсудили план.\n\n```mermaid\nflowchart TD\n  A[Старт] --> B[Готово]\n```\n"
   }'
 ```
+
+## ИИ-функции (open-source LLM)
+
+Приложение умеет **анализировать протоколы** и **улучшать текст** с помощью
+локальной open-source модели через [Ollama](https://ollama.com) — облачные API
+и ключи не нужны, всё работает на вашей машине.
+
+Возможности:
+
+- **AI-анализ** (страница чтения): резюме, сильные стороны, проблемы
+  (нет сроков/ответственных, расплывчатые формулировки), рекомендации и список
+  найденных решений/поручений. Ответ модели типизирован через
+  **structured output** Ollama (JSON-схема).
+- **ИИ-помощник в редакторе**: улучшить стиль / сократить / развернуть /
+  исправить ошибки. Результат показывается в предпросмотре — заменить текст
+  можно только явно.
+
+Запуск:
+
+```bash
+docker compose up -d ollama
+docker compose exec ollama ollama pull qwen2.5:7b   # один раз, ~4.7 ГБ
+```
+
+Настройки — в `application.yml` (`app.ai.*`) или через переменные окружения
+`OLLAMA_BASE_URL` и `OLLAMA_MODEL`. Модель по умолчанию — `qwen2.5:7b`
+(хорошо работает с русским); на слабой машине можно взять `qwen2.5:3b`.
+Если Ollama не запущена или модель не скачана, API вернёт `503` с подсказкой.
+
+Интеграция сделана без тяжёлых зависимостей — обычный Spring `RestClient`
+(`backend/.../ai/OllamaClient.java`): records под JSON-протокол Ollama,
+text blocks для промптов, исчерпывающий `switch` по режимам улучшения.
+Долгие вызовы LLM не блокируют платформенные потоки благодаря Virtual Threads.
 
 ## Тесты бэкенда
 
