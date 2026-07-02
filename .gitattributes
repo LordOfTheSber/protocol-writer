@@ -1,0 +1,14 @@
+# Нормализуем переводы строк, чтобы checksum Flyway-миграций и прочих файлов
+# не «плавал» между ОС/редакторами.
+* text=auto eol=lf
+
+*.sql   text eol=lf
+*.java  text eol=lf
+*.yml   text eol=lf
+*.ts    text eol=lf
+*.tsx   text eol=lf
+*.css   text eol=lf
+*.md    text eol=lf
+
+# Бинарные/генерируемые — не трогаем.
+*.jar   binary
